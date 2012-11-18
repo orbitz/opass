@@ -1,0 +1,11 @@
+%.cmxa: %.cmx
+	ocamlfind ocamlopt -a -thread -I +camlp4 -o $@ $^
+
+%.cmx: %.ml
+	ocamlfind ocamlopt -thread -I +camlp4 $(OCAMLC_OPTS) $(CAMLP4) -c $(patsubst %.cmx,%.ml,$@)
+
+%.cmi: %.mli
+	ocamlfind ocamlc -thread -I +camlp4 $(OCAMLC_OPTS) -c $(patsubst %.cmi,%.mli,$@)
+
+%.cmo: %.ml
+	ocamlfind ocamlc -thread -I +camlp4 $(OCAMLC_OPTS) $(CAMLP4) -c $(patsubst %.cmo,%.ml,$@)
