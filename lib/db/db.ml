@@ -19,6 +19,9 @@ end
 
 type t = Row.t list with sexp
 
+let make () =
+  []
+
 let of_string s =
   t_of_sexp (Sexp.of_string s)
 

@@ -5,6 +5,7 @@
 *.cmi
 *.cmx
 *.cmxa
+*.cma
 
 # Deps
 .d

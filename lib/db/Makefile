@@ -1,7 +1,9 @@
 CAMLP4=
 OCAMLC_OPTS=-package core,sexplib,sexplib.syntax -syntax camlp4o
 
-sources=db.ml
+cources=db.ml
+
+sources=$(courses)
 
 sources_mli=$(cources:%.ml=%.mli)
 
@@ -11,21 +13,24 @@ native_cmi=$(sources_mli:%.mli=%.cmi)
 
 .PHONY: all clean
 
-all: db.cmxa
+all: native byte
+
+native: db.cmxa
 
 db.cmxa: db.cmx
-	ocamlfind ocamlopt $(OCAMLC_OPTS) -a -thread -o $@ $^
 
 db.cmx: db.ml db.mli db.cmi
 
 db.cmi: db.mli
 
-.deps: $(sources) $(sources_mli)
-	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .deps
+byte: db.cma
+
+db.cma: db.cmo
+
+db.cmo: db.ml db.mli db.cmi
 
 clean:
 	-rm *.cmxa *.cmi *.cmx *.cmo *.o .d
-
 
 .d: $(sources) $(sources_mli)
 	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .d

@@ -1,0 +1,6 @@
+name="db"
+version="1.0.0"
+description="Database"
+requires="core"
+archive(byte)="db.cma"
+archive(native)="db.cmxa"

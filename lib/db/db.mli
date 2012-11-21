@@ -17,6 +17,8 @@ module Row : sig
     | Note     of (name * note)
 end
 
+val make      : unit -> t
+
 val of_string : string -> t
 val to_string : t -> string
 

@@ -1,4 +1,4 @@
-SUBDIRS = db main
+SUBDIRS = db password main
 
 subdirs_clean = $(all_apps:%=%_clean)
 
@@ -12,7 +12,7 @@ test: $(subdirs_test)
 
 clean: $(subdirs_clean)
 
-main: db
+main: db password
 
 $(SUBDIRS):
 	$(MAKE) -C $@ .d
