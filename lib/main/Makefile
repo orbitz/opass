@@ -1,9 +1,9 @@
 CAMLP4=
 OCAMLC_OPTS=-package core,core_extended,db
 
-cources=
+cources=db_io.ml oui.ml
 
-sources=$(courses) main.ml
+sources=$(cources) main.ml
 
 sources_mli=$(cources:%.ml=%.mli)
 
@@ -17,6 +17,10 @@ all: opass
 
 opass: $(native_cmx) $(native_cmi)
 	ocamlfind ocamlopt $(OCAMLC_OPTS) -thread -linkpkg -o opass $(native_cmx)
+
+oui.cmx: oui.ml oui.cmi
+
+db_io.cmx: db_io.ml db_io.cmi
 
 clean:
 	-rm opass *.cmxa *.cmi *.cmx *.cmo *.o .d

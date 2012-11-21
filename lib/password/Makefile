@@ -9,6 +9,8 @@ sources_mli=$(cources:%.ml=%.mli)
 
 native_cmx=$(sources:%.ml=%.cmx)
 
+byte_cmo=$(sources:%.ml=%.cmo)
+
 native_cmi=$(sources_mli:%.mli=%.cmi)
 
 .PHONY: all clean
@@ -17,7 +19,7 @@ all: native byte
 
 native: password.cmxa
 
-password.cmxa: password.cmx
+password.cmxa: $(native_cmx)
 
 password.cmx: password.ml password.mli password.cmi
 
@@ -25,7 +27,7 @@ password.cmi: password.mli
 
 byte: password.cma
 
-password.cma: password.cmo
+password.cma: $(byte_cmo)
 
 password.cmo: password.ml password.cmi
 

@@ -1,8 +1,12 @@
 open Core.Std
 
+module Add_error = struct
+  type t =
+    | Duplicate
+end
+
 module Row = struct
   type name     = string with sexp
-
   type password = { host     : string
 		  ; username : string
 		  ; password : string
@@ -11,10 +15,12 @@ module Row = struct
 
   type note     = string with sexp
 
-  type t =
-    | Password of (name * password)
-    | Note     of (name * note)
+  type elt =
+    | Password of password
+    | Note     of note
   with sexp
+
+  type t = (name * elt) with sexp
 end
 
 type t = Row.t list with sexp
@@ -30,3 +36,16 @@ let to_string t =
 
 let search ~f t =
   List.filter t ~f
+
+let add ((name, _) as row) t =
+  let f = Fn.compose ((=) name) fst in
+  (* Find dups *)
+  match search ~f t with
+    | [] ->
+      Result.Ok (row::t)
+    | _::_ ->
+      Result.Error Add_error.Duplicate
+
+let delete name t =
+  let f = Fn.compose ((<>) name) fst in
+  search ~f t

@@ -1,14 +1,12 @@
 SUBDIRS = db password main
 
-subdirs_clean = $(all_apps:%=%_clean)
+subdirs_clean = $(SUBDIRS:%=%_clean)
 
-subdirs_test  = $(all_apps:%=%_test)
+subdirs_test  = $(SUBDIRS:%=%_test)
 
-.PHONY: all test clean $(SUBDIRS) $(subdirs_clean) \
+.PHONY: all clean $(SUBDIRS) $(subdirs_clean)
 
 all: $(SUBDIRS)
-
-test: $(subdirs_test)
 
 clean: $(subdirs_clean)
 

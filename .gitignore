@@ -9,3 +9,6 @@
 
 # Deps
 .d
+
+# Out binary
+opass
