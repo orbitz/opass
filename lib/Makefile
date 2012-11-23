@@ -1,4 +1,4 @@
-SUBDIRS = db password main
+SUBDIRS = main db password editable
 
 subdirs_clean = $(SUBDIRS:%=%_clean)
 
@@ -10,7 +10,7 @@ all: $(SUBDIRS)
 
 clean: $(subdirs_clean)
 
-main: db password
+main: db password editable
 
 $(SUBDIRS):
 	$(MAKE) -C $@ .d

@@ -2,7 +2,7 @@ open Core.Std
 
 module Shell = Core_extended.Std.Shell
 
-let sh ~input cmd = Shell.run_full "/bin/sh" ["-c"; cmd]
+let sh ~input cmd = Shell.run_full ~input "/bin/sh" ["-c"; cmd ^ " 2>/dev/null"]
 
 let read ~cmd fname =
   if Sys.file_exists fname = `Yes then

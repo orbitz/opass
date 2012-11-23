@@ -1,5 +1,6 @@
 CAMLP4=
 OCAMLC_OPTS=-package core,core_extended,db
+OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
 cources=db_io.ml oui.ml
 

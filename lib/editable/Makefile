@@ -1,8 +1,8 @@
 CAMLP4=
 OCAMLC_OPTS=-package core
-OCAMLOPT_OPTS=$(OCAMLC_OPTS)
+OCAMLOPT_OPTS=-for-pack Editable $(OCAMLC_OPTS)
 
-cources=password.ml
+cources=engine.ml form.ml entry.ml
 
 sources=$(cources)
 
@@ -18,22 +18,22 @@ native_cmi=$(sources_mli:%.mli=%.cmi)
 
 all: native byte
 
-native: password.cmxa
+native: editable.cmxa
 
-password.cmxa: $(native_cmx)
+editable.cmxa: editable.cmx
 
-password.cmx: password.ml password.mli password.cmi
+editable.cmx: $(native_cmx)
+	ocamlfind ocamlopt -pack -o $@ $^
 
-password.cmi: password.mli
+byte: editable.cma
 
-byte: password.cma
+editable.cma: editable.cmo
 
-password.cma: $(byte_cmo)
-
-password.cmo: password.ml password.cmi
+editable.cmo: $(byte_cmo)
+	ocamlfind ocamlc -pack -o $@ $^
 
 clean:
-	-rm *.cmxa *.cmi *.cmx *.cmo *.o .d
+	-rm *.cmxa *.cmi *.cmx *.cmo *.o *.a .d
 
 .d: $(sources) $(sources_mli)
 	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .d

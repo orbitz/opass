@@ -1,5 +1,6 @@
 CAMLP4=
 OCAMLC_OPTS=-package core,sexplib,sexplib.syntax -syntax camlp4o
+OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
 cources=db.ml
 

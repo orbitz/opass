@@ -20,12 +20,16 @@ let add_or_exn row db =
 
 let safe_write db db_file =
   let db_file_bak = db_file ^ ".bak" in
-  Shell.cp db_file db_file_bak;
+
+  if Sys.file_exists db_file = `Yes then
+    Shell.cp db_file db_file_bak;
+
   match Db_io.write db ~cmd:!write_cmd db_file with
     | Result.Ok () ->
       ()
     | Result.Error _ -> begin
-      Shell.cp db_file_bak db_file;
+      if Sys.file_exists db_file_bak = `Yes then
+	Shell.cp db_file_bak db_file;
       failwith "Could not write db"
     end
 

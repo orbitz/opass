@@ -1,0 +1,6 @@
+name="editable"
+version="1.0.0"
+description="For building form-based UIs around $EDITOR calls"
+requires="core"
+archive(byte)="editable.cma"
+archive(native)="editable.cmxa"
