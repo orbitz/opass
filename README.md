@@ -5,6 +5,8 @@ are used to to ensure the security of this program.  It depends on being
 run in a secure location, but since the data is stored on gpg it should
 be safe to store in an insecure location.
 
+Right now opass just does things I care about so don't expect it to work
+well for you.
 
 # Operations
 
@@ -34,3 +36,11 @@ This merges a 1Password exported file into opass.  1Password may have duplicates
 and this will simply error in that case, more helpful debugging will be added
 in the future.
 
+## Generating random passwords
+
+    opass password [-l length] [-c charset]
+
+opass can be used to generate random passwords.  Valid value for charset are
+`any`, `alpha`, `alphanum`.  Example:
+
+    opass password -l 12
