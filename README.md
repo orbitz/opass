@@ -10,7 +10,7 @@ well for you.
 
 # Operations
 
-In each operation a database is create if none exists
+In each operation a database is created if none exists
 
 ## Adding
 
