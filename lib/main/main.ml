@@ -227,7 +227,7 @@ let search_cmd = Command.create_no_accum
   (fun search -> run_search !db_file search)
 
 let password_cmd = Command.create_no_accum
-  ~summary:"Generate a  random password"
+  ~summary:"Generate a random password"
   ~usage_arg:"[-l] [-c charset]"
   ~flags:[pass_length_f; charset_f]
   ~final:(function
