@@ -1,13 +1,8 @@
 open Core.Std
 
-module Add_error = struct
-  type t =
-    | Duplicate
-end
-
 module Row = struct
   type name     = string with sexp
-  type password = { host     : string
+  type password = { location : string
 		  ; username : string
 		  ; password : string
 		  }
@@ -44,8 +39,24 @@ let add ((name, _) as row) t =
     | [] ->
       Result.Ok (row::t)
     | _::_ ->
-      Result.Error Add_error.Duplicate
+      Result.Error `Duplicate
 
 let delete name t =
   let f = Fn.compose ((<>) name) fst in
   search ~f t
+
+let of_rows rows =
+  let open Result.Monad_infix in
+  let rec f t = function
+    | [] -> Result.Ok t
+    | r::rs ->
+      add r t >>= (Fn.flip f rs)
+  in
+  f (make ()) rows
+
+let rec merge t = function
+  | [] ->
+    Result.Ok t
+  | r::rs ->
+    let open Result.Monad_infix in
+    add r t >>= (Fn.flip merge rs)

@@ -23,7 +23,7 @@ let write_form fname form =
 	~f:(fun f ->
 	  Out_channel.output_string
 	    fout
-	    (Entry.prompt f ^ ": " ^ Entry.default f))
+	    (Entry.prompt f ^ ": " ^ Entry.default f ^ "\n"))
 	form)
 
 let rec read_next_line form (ch, cl) acc = function
@@ -41,7 +41,7 @@ let rec read_next_line form (ch, cl) acc = function
 	    Result.Error (`Bad_prompt p)
       end
       | `Continue s ->
-	read_next_line form (ch, cl ^ " " ^ s) acc ls
+	read_next_line form (ch, cl ^ "\n" ^ s) acc ls
   end
 
 let rec read_first_line form = function
@@ -112,7 +112,6 @@ let interact fname editors form =
       | Result.Ok input -> validate_input input
       | Result.Error `Bad_file -> prompt_input ()
       | Result.Error (`Bad_prompt _) -> prompt_input ()
-      | Result.Error err -> Result.Error err
   and validate_input input =
     match validate_form input form with
       | Result.Ok valid_input ->

@@ -1,8 +1,8 @@
 CAMLP4=
-OCAMLC_OPTS=-package core,core_extended,db
+OCAMLC_OPTS=-package core,core_extended,db,password,editable
 OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
-cources=db_io.ml oui.ml
+cources=forms.ml db_io.ml oui.ml import_1password.ml
 
 sources=$(cources) main.ml
 

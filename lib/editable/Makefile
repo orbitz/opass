@@ -2,7 +2,7 @@ CAMLP4=
 OCAMLC_OPTS=-package core
 OCAMLOPT_OPTS=-for-pack Editable $(OCAMLC_OPTS)
 
-cources=engine.ml form.ml entry.ml
+cources=entry.ml form.ml engine.ml
 
 sources=$(cources)
 

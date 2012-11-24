@@ -4,16 +4,19 @@ module Shell = Core_extended.Std.Shell
 
 let sh ~input cmd = Shell.run_full ~input "/bin/sh" ["-c"; cmd ^ " 2>/dev/null"]
 
-let read ~cmd fname =
+let read_wrap ~cmd fname =
+  let open Result.Monad_infix in
   if Sys.file_exists fname = `Yes then
     let input = In_channel.read_all fname in
-    match Result.try_with (fun () -> sh ~input cmd) with
-      | Result.Ok s ->
-	Result.try_with (fun () -> Db.of_string s)
-      | Result.Error err ->
-	Result.Error err
+    Result.try_with (fun () -> sh ~input cmd) >>= fun s ->
+    Result.try_with (fun () -> Db.of_string s)
   else
     Result.Ok (Db.make ())
+
+  let read ~cmd fname =
+    match read_wrap ~cmd fname with
+      | Result.Ok db   -> Result.Ok db
+      | Result.Error _ -> Result.Error `Bad_database
 
 let write db ~cmd fname =
   let input = Db.to_string db in
