@@ -23,7 +23,8 @@ let add_note kv db =
   key_find "title" kv >>= fun name ->
   key_find "notes" kv >>= fun note ->
   let module R = Db.Row in
-  let row = (name, R.Note note) in
+  let r = Str.regexp "\\\\n" in
+  let row = (name, R.Note (Str.global_replace r "\n" note)) in
   match Db.add row db with
     | Result.Ok db   -> Some db
     | Result.Error _ -> None
