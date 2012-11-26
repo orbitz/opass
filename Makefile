@@ -1,3 +1,5 @@
+export OCAMLPATH:=$(PWD)/lib:$(OCAMLPATH)
+
 .PHONY: all clean
 
 all:
