@@ -2,6 +2,8 @@ open Core.Std
 
 type errors = [ `Cancelled | `Bad_editor ]
 
+let form_sep = "======================================="
+
 let get_editors () =
   let editors = ["emacs"; "vim"; "vi"; "nano"] in
   match Sys.getenv "EDITOR" with
@@ -15,16 +17,23 @@ let parse_line l =
     | None ->
       `Continue (String.strip l)
 
-let write_form fname form =
+let write_forms fname forms =
+  let string_of_form form =
+    String.concat
+      ~sep:"\n"
+      (List.map
+	 ~f:(fun e ->
+	   Entry.prompt e ^ ": " ^ Entry.default e)
+	 (Form.to_list form))
+  in
+  let forms_str =
+    String.concat
+      ~sep:(form_sep ^ "\n")
+      (List.map ~f:string_of_form forms)
+  in
   Out_channel.with_file
     fname
-    ~f:(fun fout ->
-      Form.iter
-	~f:(fun f ->
-	  Out_channel.output_string
-	    fout
-	    (Entry.prompt f ^ ": " ^ Entry.default f ^ "\n"))
-	form)
+    ~f:(Fn.flip Out_channel.output_string forms_str)
 
 let rec read_next_line form (ch, cl) acc = function
   | [] ->
@@ -62,20 +71,44 @@ let rec read_first_line form = function
 	Result.Error `Bad_file
   end
 
-let read_form fname form =
+let read_forms fname forms =
   let lines =
     In_channel.with_file
       fname
       ~f:In_channel.input_lines
   in
-  read_first_line form lines
+  let remove_sep =
+    List.filter ~f:(function | [v] when v = form_sep -> true | _ -> false)
+  in
+  let grouped =
+    remove_sep
+      (List.group
+	 ~break:(fun x y -> x = form_sep || y = form_sep)
+	 lines)
+  in
+  let rec read_form acc = function
+    | [] -> Result.Ok (List.rev acc)
+    | (form, lines)::fl -> begin
+      match read_first_line form lines with
+	| Result.Ok r      -> read_form (r::acc) fl
+	| Result.Error err -> Result.Error err
+    end
+  in
+  read_form [] (List.zip_exn forms grouped)
 
-let validate_form input form =
-  match Form.validate input form with
+let validate_forms inputs forms =
+  let rec validate_form acc = function
     | [] ->
-      Result.Ok input
-    | errors ->
-      Result.Error errors
+      Result.Ok (List.rev acc)
+    | (input, form)::inf -> begin
+      match Form.validate input form with
+	| [] ->
+	  validate_form (input::acc) inf
+	| errors ->
+	  Result.Error errors
+    end
+  in
+  validate_form [] (List.zip_exn inputs forms)
 
 let rec run_editor fname = function
   | [] ->
@@ -88,36 +121,43 @@ let rec run_editor fname = function
 	run_editor fname es
   end
 
-let print_errors form errors =
-  List.iter
-    ~f:(fun (n, _) ->
-      let prompt =
-	match Form.prompt_of_name n form with
-	  | Some p -> p
-	  | None   -> "Unknown"
-      in
-      Out_channel.output_string stdout (prompt ^ "\n\tErrors\n"))
-    errors
+let print_errors _ _ = Printf.printf "Errors\n"
+(* let print_errors form errors = *)
+(*   List.iter *)
+(*     ~f:(fun (n, _) -> *)
+(*       let prompt = *)
+(* 	match Form.prompt_of_name n form with *)
+(* 	  | Some p -> p *)
+(* 	  | None   -> "Unknown" *)
+(*       in *)
+(*       Out_channel.output_string stdout (prompt ^ "\n\tErrors\n")) *)
+(*     errors *)
 
-let interact fname editors form =
+let interact fname editors forms =
   let open Result.Monad_infix in
   let rec prompt_input () =
-    write_form fname form;
-    edit_form ()
-  and edit_form () =
+    write_forms fname forms;
+    edit_forms ()
+  and edit_forms () =
     run_editor fname editors >>= fun () ->
     read_input ()
   and read_input () =
-    match read_form fname form with
-      | Result.Ok input -> validate_input input
-      | Result.Error `Bad_file -> prompt_input ()
-      | Result.Error (`Bad_prompt _) -> prompt_input ()
-  and validate_input input =
-    match validate_form input form with
-      | Result.Ok valid_input ->
-	Result.Ok valid_input
+    match read_forms fname forms with
+      | Result.Ok inputs -> validate_inputs inputs
+      | Result.Error `Bad_file -> begin
+	Printf.printf "Unparsable file\n";
+	prompt_input ()
+      end
+      | Result.Error (`Bad_prompt _) -> begin
+	Printf.printf "Input contains an unknown prompt\n";
+	prompt_input ()
+      end
+  and validate_inputs inputs =
+    match validate_forms inputs forms with
+      | Result.Ok valid_inputs ->
+	Result.Ok valid_inputs
       | Result.Error errs -> begin
-	print_errors form errs;
+	print_errors forms errs;
 	prompt_user ()
       end
   and prompt_user () =
@@ -126,7 +166,7 @@ let interact fname editors form =
       | Some input -> begin
 	match input with
 	  | "" | "E" | "e" ->
-	    edit_form ()
+	    edit_forms ()
 	  | "S" | "s" ->
 	    prompt_input ()
 	  | "C" | "c" ->
@@ -139,9 +179,9 @@ let interact fname editors form =
   in
   prompt_input ()
 
-let run form =
+let run forms =
   let temp_file = Filename.temp_file "opass" "form" in
   let editors = get_editors () in
-  let res = interact temp_file editors form in
+  let res = interact temp_file editors forms in
   Sys.remove temp_file;
   res
