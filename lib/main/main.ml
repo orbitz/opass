@@ -76,15 +76,14 @@ let run_add db_file =
   and confirm_row db row =
     Printf.printf "Add, retry, cancel? (A/r/c): %!";
     match In_channel.input_line stdin with
-      | Some l -> begin
-	match l with
-	  | "" | "A" | "a" -> add_row db row
-	  | "R" | "r"      -> read_row db
-	  | "C" | "c"      -> Result.Error `Cancelled
-	  | _              -> confirm_row db row
-      end
+      | Some l -> confirm_action db row l
       | None ->
 	Result.Error `Cancelled
+  and confirm_action db row = function
+    | "" | "A" | "a" -> add_row db row
+    | "R" | "r"      -> read_row db
+    | "C" | "c"      -> Result.Error `Cancelled
+    | _              -> confirm_row db row
   and add_row db row =
     match Db.add row db with
       | Result.Ok db ->
@@ -207,6 +206,54 @@ let run_merge db_file src_type src_file =
     | Result.Error `Database_write_fail ->
       Printf.printf "Failed to write database\n"
 
+let run_del db_file terms =
+  let is_member elt l =
+    List.findi ~f:(fun _ e -> elt = e) l <> None
+  in
+  let rec read_db () =
+    match Db_io.read ~cmd:!read_cmd db_file with
+      | Result.Ok db ->
+	search_db db
+      | Result.Error `Bad_database ->
+	Result.Error `Bad_database
+  and search_db db =
+    let module R = Db.Row in
+    let f = fun (n, _) -> is_member n terms in
+    let rows = Db.search ~f db in
+    print_rows db rows
+  and print_rows db = function
+    | [] ->
+      Result.Error `Not_found
+    | rows -> begin
+      List.iter
+	~f:(fun (n, _) -> Printf.printf "%s\n" n)
+	rows;
+      confirm_delete db rows
+    end
+  and confirm_delete db rows =
+    Printf.printf "Delete rows? (Y/n): %!";
+    match In_channel.input_line stdin with
+      | Some l -> check_input db rows l
+      | None   -> Result.Error `Cancelled
+  and check_input db rows = function
+    | "" | "Y" | "y" -> delete_rows db rows
+    | "N" | "n"      -> Result.Error `Cancelled
+    | _              -> confirm_delete db rows
+  and delete_rows db = function
+    | [] -> safe_write db db_file
+    | (n, _)::ns -> delete_rows (Db.delete n db) ns
+  in
+  match read_db () with
+    | Result.Ok () -> ()
+    | Result.Error `Not_found ->
+      Printf.printf "No rows found\n"
+    | Result.Error `Bad_database ->
+      Printf.printf "Bad database, aborting\n"
+    | Result.Error `Database_write_fail ->
+      Printf.printf "Writng database failed, aborting\n"
+    | Result.Error `Cancelled ->
+      Printf.printf "Delete canceleld\n"
+
 let add_cmd = Command.create_no_accum
   ~summary:"Add an entry"
   ~usage_arg:"[-db file]"
@@ -244,6 +291,15 @@ let merge_cmd = Command.create_no_accum
     | _  -> failwith "No arguments should be specified")
   (fun () -> run_merge !db_file !src_type !src_file)
 
+let del_cmd = Command.create_no_accum
+  ~summary:"Delete entries"
+  ~usage_arg:"[-db file] term1 [term2 [term3 [..]]]"
+  ~flags:[db_file_f]
+  ~final:(function
+    | []    -> failwith "Need atleast one search term"
+    | terms -> terms)
+  (fun terms -> run_del !db_file terms)
+
 let main () =
   Random.self_init ();
   Exn.handle_uncaught ~exit:true (fun () ->
@@ -253,6 +309,7 @@ let main () =
 	 ; ("search", search_cmd)
 	 ; ("password", password_cmd)
 	 ; ("merge", merge_cmd)
+	 ; ("del", del_cmd)
 	 ]))
 
 let () = main ()

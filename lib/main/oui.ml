@@ -16,8 +16,8 @@ let generate_password p l c =
       | _          -> failwith "This should never happen"
 
 let read_password () =
-  match Editable.Engine.run Forms.password with
-    | Result.Ok inputs ->
+  match Editable.Engine.run [Forms.password] with
+    | Result.Ok [inputs] ->
       let module R = Db.Row in
       let password =
 	generate_password
@@ -30,16 +30,20 @@ let read_password () =
 				     ;   username = k "username" inputs
 				     ;   password = password
 				     })
+    | Result.Ok _ ->
+      failwith "Bad input"
     | Result.Error `Cancelled ->
       Result.Error `Cancelled
     | Result.Error `Bad_editor ->
       Result.Error `Bad_editor
 
 let read_note () =
-  match Editable.Engine.run Forms.note with
-    | Result.Ok inputs ->
+  match Editable.Engine.run [Forms.note] with
+    | Result.Ok [inputs] ->
       let module R = Db.Row in
       Result.Ok (k "name" inputs, R.Note (k "note" inputs))
+    | Result.Ok _ ->
+      failwith "Bad input"
     | Result.Error `Cancelled ->
       Result.Error `Cancelled
     | Result.Error `Bad_editor ->
