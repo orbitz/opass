@@ -78,7 +78,7 @@ let read_forms fname forms =
       ~f:In_channel.input_lines
   in
   let remove_sep =
-    List.filter ~f:(function | [v] when v = form_sep -> true | _ -> false)
+    List.filter ~f:(function | [v] when v = form_sep -> false | _ -> true)
   in
   let grouped =
     remove_sep
@@ -108,6 +108,7 @@ let validate_forms inputs forms =
 	  Result.Error errors
     end
   in
+  Printf.printf "inputs: %d forms: %d\n" (List.length inputs) (List.length forms);
   validate_form [] (List.zip_exn inputs forms)
 
 let rec run_editor fname = function
