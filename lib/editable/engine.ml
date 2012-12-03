@@ -108,7 +108,6 @@ let validate_forms inputs forms =
 	  Result.Error errors
     end
   in
-  Printf.printf "inputs: %d forms: %d\n" (List.length inputs) (List.length forms);
   validate_form [] (List.zip_exn inputs forms)
 
 let rec run_editor fname = function
