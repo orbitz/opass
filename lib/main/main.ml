@@ -156,6 +156,65 @@ let run_search db_file term =
     | Result.Error `Bad_database ->
       Printf.printf "Bad database, aborting\n"
 
+let run_edit db_file entryname =
+  let rec read_db () =
+    match Db_io.read ~cmd:!read_cmd db_file with
+      | Result.Ok db ->
+	search_db db
+      | Result.Error `Bad_database ->
+	Result.Error `Bad_database
+  and search_db db =
+    let module R = Db.Row in
+    let f = fun (n, _) -> n = entryname in
+    match Db.search ~f db with
+      | [] ->
+	Result.Error `Not_found
+      | [row] ->
+	edit_row db row
+      | _ ->
+	failwith "This should never happen"
+  and edit_row db row =
+    match Oui.edit_row row with
+      | Result.Ok row -> begin
+	print_row row;
+	confirm_edit db row
+      end
+      | Result.Error `Bad_editor ->
+	Result.Error `Bad_editor
+      | Result.Error `Cancelled ->
+	Result.Error `Cancelled
+  and confirm_edit db rows =
+    Printf.printf "Save row? (Y/n): %!";
+    match In_channel.input_line stdin with
+      | Some l -> check_input db rows l
+      | None   -> Result.Error `Cancelled
+  and check_input db row = function
+    | "" | "Y" | "y" -> save_row db row
+    | "N" | "n"      -> Result.Error `Cancelled
+    | _              -> confirm_edit db row
+  and save_row db row =
+    match Db.add row (Db.delete entryname db) with
+      | Result.Ok db ->
+	safe_write db db_file
+      | Result.Error `Duplicate ->
+	Result.Error `Duplicate
+  in
+  match read_db () with
+    | Result.Ok () -> ()
+    | Result.Error `Not_found ->
+      Printf.printf "No rows found\n"
+    | Result.Error `Bad_database ->
+      Printf.printf "Bad database, aborting\n"
+    | Result.Error `Database_write_fail ->
+      Printf.printf "Writng database failed, aborting\n"
+    | Result.Error `Cancelled ->
+      Printf.printf "Edit cancelled\n"
+    | Result.Error `Duplicate ->
+      Printf.printf "Entry already exists, aborting\n"
+    | Result.Error `Bad_editor ->
+      Printf.printf "No appropriate editor could be run\n"
+
+
 let run_password l c =
   let pass =
     match c with
@@ -252,7 +311,7 @@ let run_del db_file terms =
     | Result.Error `Database_write_fail ->
       Printf.printf "Writng database failed, aborting\n"
     | Result.Error `Cancelled ->
-      Printf.printf "Delete canceleld\n"
+      Printf.printf "Delete cancelled\n"
 
 let add_cmd = Command.create_no_accum
   ~summary:"Add an entry"
@@ -272,6 +331,15 @@ let search_cmd = Command.create_no_accum
     | [search] -> Some search
     | _        -> failwith "Need search term")
   (fun search -> run_search !db_file search)
+
+let edit_cmd = Command.create_no_accum
+  ~summary:"Edit an entry"
+  ~usage_arg:"[-db file] entryname"
+  ~flags:[db_file_f]
+  ~final:(function
+    | [entry] -> entry
+    | _        -> failwith "Must provide one entry name")
+  (fun entry -> run_edit !db_file entry)
 
 let password_cmd = Command.create_no_accum
   ~summary:"Generate a random password"
@@ -307,6 +375,7 @@ let main () =
       (Command.group ~summary:"opass commands"
 	 [ ("add", add_cmd)
 	 ; ("search", search_cmd)
+	 ; ("edit", edit_cmd)
 	 ; ("password", password_cmd)
 	 ; ("merge", merge_cmd)
 	 ; ("del", del_cmd)
