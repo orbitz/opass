@@ -17,26 +17,37 @@ let charset = function
   | "any" | "alpha" | "alphanum" -> None
   | s -> Some [s ^ " is an invalid charset"; "Must be any, alpha, or alphanum"]
 
-let password =
+let default_password =
+  let module R = Db.Row in
+  { R.location = ""
+  ;   username = ""
+  ;   password = ""
+  }
+
+let default_note =
+  ""
+
+let password ?(name = "") ?(p = default_password) () =
   let open Editable in
+  let module R = Db.Row in
   Form.make [ Entry.make
 	      ~name:"name"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const name)
 	      ~validate:not_empty
 	      ~prompt:"Name"
 	    ; Entry.make
 	      ~name:"location"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const p.R.location)
 	      ~validate:not_empty
 	      ~prompt:"Location"
 	    ; Entry.make
 	      ~name:"username"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const p.R.username)
 	      ~validate:anything
 	      ~prompt:"Username"
 	    ; Entry.make
 	      ~name:"password"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const p.R.password)
 	      ~validate:anything
 	      ~prompt:"Password (empty for random)"
 	    ; Entry.make
@@ -51,16 +62,16 @@ let password =
 	      ~prompt:"Random password charset (any/alpha/alphanum)"
 	    ]
 
-let note =
+let note ?(name = "") ?(n = default_note) () =
   let open Editable in
   Form.make [ Entry.make
 	      ~name:"name"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const name)
 	      ~validate:not_empty
 	      ~prompt:"Name"
 	    ; Entry.make
 	      ~name:"note"
-	      ~default:(Fn.const "")
+	      ~default:(Fn.const n)
 	      ~validate:not_empty
 	      ~prompt:"Note"
 	    ]

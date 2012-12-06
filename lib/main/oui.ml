@@ -15,8 +15,8 @@ let generate_password p l c =
       | "alphanum" -> Password.mk_alphanum l
       | _          -> failwith "This should never happen"
 
-let read_password () =
-  match Editable.Engine.run [Forms.password] with
+let run_password pf =
+  match Editable.Engine.run [pf] with
     | Result.Ok [inputs] ->
       let module R = Db.Row in
       let password =
@@ -37,8 +37,8 @@ let read_password () =
     | Result.Error `Bad_editor ->
       Result.Error `Bad_editor
 
-let read_note () =
-  match Editable.Engine.run [Forms.note] with
+let run_note nf =
+  match Editable.Engine.run [nf] with
     | Result.Ok [inputs] ->
       let module R = Db.Row in
       Result.Ok (k "name" inputs, R.Note (k "note" inputs))
@@ -55,9 +55,9 @@ let rec read_row () =
     | Some l -> begin
       match l with
 	| "" | "P" | "p" ->
-	  read_password ()
+	  run_password (Forms.password ())
 	| "N" | "n" ->
-	  read_note ()
+	  run_note (Forms.note ())
 	| _ -> begin
 	  Printf.printf "Unknown input, try again\n";
 	  read_row ()
@@ -66,3 +66,9 @@ let rec read_row () =
     | None ->
       Result.Error `Cancelled
 
+
+let edit_row = function
+    | (name, Db.Row.Password p) ->
+      run_password (Forms.password ~name ~p ())
+    | (name, Db.Row.Note n) ->
+      run_note (Forms.note ~name ~n ())
