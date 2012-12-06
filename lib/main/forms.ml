@@ -71,7 +71,7 @@ let note ?(name = "") ?(n = default_note) () =
 	      ~prompt:"Name"
 	    ; Entry.make
 	      ~name:"note"
-	      ~default:(Fn.const default_note)
+	      ~default:(Fn.const n)
 	      ~validate:not_empty
 	      ~prompt:"Note"
 	    ]
