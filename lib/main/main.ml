@@ -286,28 +286,28 @@ let run_del ~db_file ~terms =
 let add_cmd = Command.basic
   ~summary:"Add an entry"
   Command.Spec.(empty +> Flag.db_file ())
-  (fun db_file () -> run_add ~db_file)
+  (fun db_file -> run_add ~db_file)
 
 let search_cmd = Command.basic
   ~summary:"Perform a search"
   Command.Spec.(empty
                 +> Flag.db_file ()
                 +> anon (maybe ("term" %: string)))
-  (fun db_file term () -> run_search ~db_file ~term)
+  (fun db_file term -> run_search ~db_file ~term)
 
 let edit_cmd = Command.basic
   ~summary:"Edit an entry"
   Command.Spec.(empty
                 +> Flag.db_file ()
                 +> anon ("entry" %: string))
-  (fun db_file entry () -> run_edit ~db_file ~entry)
+  (fun db_file entry -> run_edit ~db_file ~entry)
 
 let password_cmd = Command.basic
   ~summary:"Generate a random password"
   Command.Spec.(empty
                 +> Flag.pass_length ()
                 +> Flag.charset ())
-  (fun pass_length charset () -> run_password ~pass_length ~charset)
+  (fun pass_length charset -> run_password ~pass_length ~charset)
 
 let merge_cmd = Command.basic
   ~summary:"Merge another database into this one"
@@ -315,7 +315,7 @@ let merge_cmd = Command.basic
                 +> Flag.db_file ()
                 +> Flag.src_type ()
                 +> Flag.src_file ())
-  (fun db_file src_type src_file () ->
+  (fun db_file src_type src_file ->
     run_merge ~db_file ~src_type ~src_file)
 
 let del_cmd = Command.basic
@@ -324,7 +324,7 @@ let del_cmd = Command.basic
                 +> Flag.db_file ()
                 +> anon ("term" %: string)
                 +> anon (sequence ("term" %: string)))
-  (fun db_file term_hd term_tl () ->
+  (fun db_file term_hd term_tl ->
     run_del ~db_file ~terms:(term_hd::term_tl))
 
 let main () =
