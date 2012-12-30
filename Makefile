@@ -1,4 +1,4 @@
-export OCAMLPATH:=$(PWD)/lib:$(OCAMLPATH)
+#export OCAMLPATH:=$(PWD)/lib:$(OCAMLPATH)
 
 .PHONY: all clean
 
