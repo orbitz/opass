@@ -12,3 +12,8 @@
 
 # Out binary
 opass
+
+# ocamlbuild
+_build
+*.byte
+*.native

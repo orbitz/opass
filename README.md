@@ -1,4 +1,4 @@
-# Opass
+# opass
 opass is a simple password database written in ocaml.  It uses gpg
 for storing the db and all operation are performed in memory.  No tricks
 are used to to ensure the security of this program.  It depends on being
@@ -7,6 +7,19 @@ be safe to store in an insecure location.
 
 Right now opass just does things I care about so don't expect it to work
 well for you.
+
+# Building and installing opass
+opass has been packaged and will hopefully soon be included in `opam`. If you
+have `opam` installed you should be able to simply run `opam install opass`.  
+
+opass uses `ocamlbuild` for compilation. You can build it with the following
+command, run from the root directory of this repository:
+
+    ocamlbuild -use-ocamlfind -Is lib,bin bin/main.native
+
+This will result in a binary, `main.native` being created in the directory you
+run it from. Simply rename this to `opass` and move it to somewhere in your
+path to install. 
 
 # Operations
 
