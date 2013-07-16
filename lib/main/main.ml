@@ -116,8 +116,9 @@ let run_search ~db_file ~term =
               (is_sub ~substring:term n ||
                  is_sub ~substring:term l  ||
                  is_sub ~substring:term u)
-            | (n, R.Note _) ->
-              is_sub ~substring:term n
+            | (n, R.Note note_text) ->
+              (is_sub ~substring:term n ||
+                 is_sub ~substring:term note_text)
         end
     in
     let rows = Db.search ~f db
