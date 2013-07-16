@@ -131,7 +131,8 @@ let run_search ~db_file ~term =
       List.iter
         ~f:(fun r ->
           printf "=============================================\n";
-          print_row r)
+          print_row r;
+          printf "\n")
         rows;
       Ok ()
     end
