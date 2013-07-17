@@ -47,7 +47,7 @@ let rec read_next_line form (ch, cl) acc = function
 	  | Some h ->
 	    read_next_line form (h, s) ((ch, cl)::acc) ls
 	  | None ->
-	    Result.Error (`Bad_prompt p)
+	    read_next_line form (ch, cl ^ "\n" ^ l) acc ls
       end
       | `Continue s ->
 	read_next_line form (ch, cl ^ "\n" ^ s) acc ls
