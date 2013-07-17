@@ -11,6 +11,10 @@ module Flag = struct
     flag "-db" ~doc:" Database file, set to opass.db by default"
       (optional_with_default "opass.db" string)
 
+  let in_all () =
+    flag ~aliases:["--in-all"] "-in-all" ~doc:" Search everywhere, even in the text of notes"
+      (no_arg)
+
   let pass_length () =
     flag "-length" ~doc:" Length of password to generate"
       (optional_with_default 24 int)
@@ -93,7 +97,7 @@ let run_add ~db_file =
     | Error `Bad_database ->
       printf "Database is bad, aborting\n"
 
-let run_search ~db_file ~term =
+let run_search ~db_file ~term ~in_all =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -117,8 +121,7 @@ let run_search ~db_file ~term =
                  is_sub ~substring:term l  ||
                  is_sub ~substring:term u)
             | (n, R.Note note_text) ->
-              (is_sub ~substring:term n ||
-                 is_sub ~substring:term note_text)
+              (is_sub ~substring:term n || (in_all && is_sub ~substring:term note_text))
         end
     in
     let rows = Db.search ~f db
@@ -294,8 +297,9 @@ let search_cmd = Command.basic
   ~summary:"Perform a search"
   Command.Spec.(empty
                 +> Flag.db_file ()
+                +> Flag.in_all ()
                 +> anon (maybe ("term" %: string)))
-  (fun db_file term () -> run_search ~db_file ~term)
+  (fun db_file in_all term () -> run_search ~db_file ~term ~in_all)
 
 let edit_cmd = Command.basic
   ~summary:"Edit an entry"
