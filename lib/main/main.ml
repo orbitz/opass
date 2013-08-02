@@ -135,7 +135,7 @@ let run_search ~db_file ~term ~in_all =
         ~f:(fun r ->
           printf "=============================================\n";
           print_row r;
-          printf "\n")
+          printf "---------------------------------------------\n\n")
         rows;
       Ok ()
     end
