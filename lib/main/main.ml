@@ -24,11 +24,11 @@ module Flag = struct
       (optional_with_default "any" string)
 
   let src_type () =
-    flag "-type" ~doc:" Source type (1password)"
+    flag "-type" ~doc:" Source type (1password or txt)"
       (required string)
 
   let src_file () =
-    flag "-file" ~doc:" Source file"
+    flag "-file" ~doc:" Source file (for 1password) or directory (for txt)"
       (required string)
 end
 
@@ -209,8 +209,8 @@ let run_password ~pass_length:l ~charset:c =
 let run_merge ~db_file ~src_type ~src_file =
   let rec src_to_db () =
     match src_type with
-      | "1password" ->
-        import_1password ()
+      | "1password" -> import_1password ()
+      | "txt" -> import_txt_dir ()
       | _ ->
         Error `Unknown_src_type
   and import_1password () =
@@ -219,6 +219,10 @@ let run_merge ~db_file ~src_type ~src_file =
         read_db db_1password
       | None ->
         Error `Bad_src_file
+  and import_txt_dir () =
+    match Import_txt.import src_file with
+      | Some db_txt -> read_db db_txt
+      | None -> Error `Bad_src_file
   and read_db src_db =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
