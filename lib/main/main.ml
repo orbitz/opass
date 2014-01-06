@@ -24,11 +24,11 @@ module Flag = struct
       (optional_with_default "any" string)
 
   let src_type () =
-    flag "-type" ~doc:" Source type (1password or txt)"
+    flag "-type" ~doc:" Source type (1password, txt or csv)"
       (required string)
 
   let src_file () =
-    flag "-file" ~doc:" Source file (for 1password) or directory (for txt)"
+    flag "-file" ~doc:" Source file (for 1password and csv) or directory (for txt)"
       (required string)
 end
 
@@ -211,6 +211,7 @@ let run_merge ~db_file ~src_type ~src_file =
     match src_type with
       | "1password" -> import_1password ()
       | "txt" -> import_txt_dir ()
+      | "csv" -> import_csv ()
       | _ ->
         Error `Unknown_src_type
   and import_1password () =
@@ -221,6 +222,10 @@ let run_merge ~db_file ~src_type ~src_file =
         Error `Bad_src_file
   and import_txt_dir () =
     match Import_txt.import src_file with
+      | Some db_txt -> read_db db_txt
+      | None -> Error `Bad_src_file
+  and import_csv () =
+    match Import_csv.import src_file with
       | Some db_txt -> read_db db_txt
       | None -> Error `Bad_src_file
   and read_db src_db =
