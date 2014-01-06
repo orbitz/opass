@@ -46,29 +46,23 @@ let rec fold_on_dir_tree f acc start_dir =
 ;;
 
 let note_of_file kind db fname =
-  match db with
-  | Ok db -> begin
-      let module F = Filename in
-      let module S = Core.Core_string in
-      let name = F.basename fname |>
-                 F.chop_extension |>
-                 S.tr ~target:'_' ~replacement:' ' in
-      let name = List.map (S.split name ~on:' ') S.capitalize |>
-                 S.concat ~sep:" " in
-      let content = open_in_bin fname |> Core.In_channel.input_all |> S.strip in
-      let res = Db.add (name, Db.Row.Note content) db in
-      match res with
-      | Ok x -> Ok x
-      | Error _ -> begin
-          Printf.eprintf "Error: duplicate entry: \"%s\", going on...\n%!" name;
-          (Ok db)
-        end
+  let module F = Filename in
+  let module S = Core.Core_string in
+  let name = F.basename fname |>
+             F.chop_extension |>
+             S.tr ~target:'_' ~replacement:' ' in
+  let name = List.map (S.split name ~on:' ') S.capitalize |>
+             S.concat ~sep:" " in
+  let content = open_in_bin fname |> Core.In_channel.input_all |> S.strip in
+  let res = Db.add (name, Db.Row.Note content) db in
+  match res with
+  | Ok x -> x
+  | Error _ -> begin
+      Printf.eprintf "Error: duplicate entry: \"%s\", going on...\n%!" name;
+      db
     end
-  | Error _ -> failwith "IMPOSSIBLE"
 ;;
 
 let import dirname =
-  match (fold_on_dir_tree note_of_file (Ok (Db.make ())) dirname) with
-  | Ok db -> Some db
-  | Error _ -> failwith "IMPOSSIBLE"
+  Some (fold_on_dir_tree note_of_file (Db.make ()) dirname)
 ;;
