@@ -1,45 +1,20 @@
 CAMLP4=
-OCAMLC_OPTS=-package core
-OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
-cources=password.ml
+OCAMLDEP_OPTS=-package core
+OCAMLC_OPTS=$(OCAMLDEP_OPTS)
+OCAMLOPT_OPTS=$(OCAMLDEP_OPTS)
 
-sources=$(cources)
+LIB_MODULES=password.ml
+NON_LIB_MODULES=
 
-sources_mli=$(cources:%.ml=%.mli)
+BYTE_TARGETS=password.cma
+NATIVE_TARGETS=password.cmxa
 
-native_cmx=$(sources:%.ml=%.cmx)
+.PHONY: all test
 
-byte_cmo=$(sources:%.ml=%.cmo)
+all: native-code byte-code
 
-native_cmi=$(sources_mli:%.mli=%.cmi)
-
-.PHONY: all clean
-
-all: native byte
-
-native: password.cmxa
-
-password.cmxa: $(native_cmx)
-
-password.cmx: password.ml password.mli password.cmi
-
-password.cmi: password.mli
-
-byte: password.cma
-
-password.cma: $(byte_cmo)
-
-password.cmo: password.ml password.cmi
-
-clean:
-	-rm *.cmxa *.cmi *.cmx *.cmo *.o .d
-
-.d: $(sources) $(sources_mli)
-	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .d
+test:
 
 # Dependencies
 include ../Ocamlrules.mk.in
-
-# This won't exist until it is generated, so .deps needs to run first
--include .d

@@ -1,36 +1,20 @@
 CAMLP4=
-OCAMLC_OPTS=-package str,core,core_extended,db,password,editable,csv
-OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
-cources=forms.ml db_io.ml oui.ml import_1password.ml import_txt.ml import_csv.ml
+OCAMLDEP_OPTS=-package core,core_extended,str,db,password,editable,csv
+OCAMLC_OPTS=$(OCAMLDEP_OPTS)
+OCAMLOPT_OPTS=$(OCAMLDEP_OPTS)
 
-sources=$(cources) main.ml
+LIB_MODULES=forms.ml db_io.ml oui.ml import_1password.ml import_txt.ml import_csv.ml
+NON_LIB_MODULES=main.ml
 
-sources_mli=$(cources:%.ml=%.mli)
+BYTE_TARGETS=opass.byte
+NATIVE_TARGETS=opass.native
 
-native_cmx=$(sources:%.ml=%.cmx)
+.PHONY: all test
 
-native_cmi=$(sources_mli:%.mli=%.cmi)
+all: native-code byte-code
 
-.PHONY: all clean
-
-all: opass
-
-opass: $(native_cmx) $(native_cmi)
-	ocamlfind ocamlopt $(OCAMLC_OPTS) -thread -linkpkg -o opass $(native_cmx)
-
-oui.cmx: oui.ml oui.cmi
-
-db_io.cmx: db_io.ml db_io.cmi
-
-clean:
-	-rm opass *.cmxa *.cmi *.cmx *.cmo *.o .d
-
-.d: $(sources) $(sources_mli)
-	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .d
+test:
 
 # Dependencies
 include ../Ocamlrules.mk.in
-
-# This won't exist until it is generated, so .deps needs to run first
--include .d
