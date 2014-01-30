@@ -1,43 +1,20 @@
 CAMLP4=
-OCAMLC_OPTS=-package core,sexplib,sexplib.syntax -syntax camlp4o
+
+OCAMLDEP_OPTS= -package core,sexplib,sexplib.syntax -syntax camlp4o
+OCAMLC_OPTS=$(OCAMLDEP_OPTS)
 OCAMLOPT_OPTS=$(OCAMLC_OPTS)
 
-cources=db.ml
+LIB_MODULES=db.ml
+NON_LIB_MODULES=
 
-sources=$(courses)
+BYTE_TARGETS=db.cma
+NATIVE_TARGETS=db.cmxa
 
-sources_mli=$(cources:%.ml=%.mli)
+.PHONY: all test
 
-native_cmx=$(sources:%.ml=%.cmx)
+all: native-code byte-code
 
-native_cmi=$(sources_mli:%.mli=%.cmi)
-
-.PHONY: all clean
-
-all: native byte
-
-native: db.cmxa
-
-db.cmxa: db.cmx
-
-db.cmx: db.ml db.mli db.cmi
-
-db.cmi: db.mli
-
-byte: db.cma
-
-db.cma: db.cmo
-
-db.cmo: db.ml db.mli db.cmi
-
-clean:
-	-rm *.cmxa *.cmi *.cmx *.cmo *.o .d
-
-.d: $(sources) $(sources_mli)
-	ocamlfind ocamldep $(OCAMLC_OPTS) $(CAMLP4) $(sources) $(sources_mli) > .d
+test:
 
 # Dependencies
 include ../Ocamlrules.mk.in
-
-# This won't exist until it is generated, so .deps needs to run first
--include .d

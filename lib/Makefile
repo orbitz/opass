@@ -1,20 +1,33 @@
-SUBDIRS = main db password editable
+SUBDIRS = main editable db password
 
-subdirs_clean = $(SUBDIRS:%=%_clean)
+all_apps = $(SUBDIRS)
 
-subdirs_test  = $(SUBDIRS:%=%_test)
+subdirs_clean = $(all_apps:%=%_clean)
 
-.PHONY: all clean $(SUBDIRS) $(subdirs_clean)
+subdirs_test  = $(all_apps:%=%_test)
+
+subdirs_install = $(all_apps:%=%_install)
+
+.PHONY: all test clean $(SUBDIRS) $(subdirs_clean) $(subdirs_test) $(subdirs_install)
 
 all: $(SUBDIRS)
 
+main: editable db password
+
+install: $(subdirs_install)
+
+test: $(subdirs_test)
+
 clean: $(subdirs_clean)
 
-main: db password editable
 
 $(SUBDIRS):
 	$(MAKE) -C $@ .d
-	$(MAKE) -C $@
+	$(MAKE) -C $@ native-code
+	$(MAKE) -C $@ byte-code
+
+$(subdirs_install):
+	$(MAKE) -C $(patsubst %_install,%,$@) install
 
 $(subdirs_test):
 	$(MAKE) -C $(patsubst %_test,%,$@) test
