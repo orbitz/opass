@@ -30,6 +30,10 @@ module Flag = struct
   let src_file () =
     flag "-file" ~doc:" Source file (for 1password and csv) or directory (for txt)"
       (required string)
+
+  let show_pass () =
+    flag "-show" ~doc:" Display the password instead of leaving it blank"
+      (no_arg)
 end
 
 let read_cmd  = "gpg --decrypt"
@@ -51,10 +55,15 @@ let safe_write db db_file =
       Error `Database_write_fail
     end
 
-let print_row = function
-  | (name, Db.Row.Password { Db.Row.location; username; password}) ->
-    Printf.printf "Name: %s\nLocation: %s\nUsername: %s\nPassword: %s\n" name
-      location username password
+let print_row show_pass = function
+  | (name, Db.Row.Password { Db.Row.location; username; password}) -> begin
+    Printf.printf "Name: %s\nLocation: %s\nUsername: %s\n"
+      name
+      location
+      username;
+    if show_pass then
+      Printf.printf "Password: %s\n" password;
+  end
   | (name, Db.Row.Note n) ->
     Printf.printf "Name: %s\nNote:\n%s\n" name n
 
@@ -66,7 +75,7 @@ let run_add ~db_file =
   and read_row db =
     Oui.read_row ()
     >>= fun row ->
-    print_row row;
+    print_row true row;
     confirm_row db row
   and confirm_row db row =
     Printf.printf "Add, retry, cancel? (A/r/c): %!";
@@ -97,7 +106,7 @@ let run_add ~db_file =
     | Error `Bad_database ->
       printf "Database is bad, aborting\n"
 
-let run_search ~db_file ~terms ~in_all =
+let run_search ~db_file ~terms ~in_all ~show_pass =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -132,15 +141,15 @@ let run_search ~db_file ~terms ~in_all =
     in
     let rows = Db.search ~f db
     in
-    print_rows rows
-  and print_rows = function
+    print_rows show_pass rows
+  and print_rows show_pass = function
     | [] ->
       Error `Not_found
     | rows -> begin
       List.iter
         ~f:(fun r ->
           printf "=============================================\n";
-          print_row r;
+          print_row show_pass r;
           printf "---------------------------------------------\n\n")
         rows;
       Ok ()
@@ -170,7 +179,7 @@ let run_edit ~db_file ~entry =
   and edit_row db row =
     Oui.edit_row row
     >>= fun row ->
-    print_row row;
+    print_row true row;
     confirm_edit db row
   and confirm_edit db rows =
     printf "Save row? (Y/n): %!";
@@ -313,8 +322,9 @@ let search_cmd = Command.basic
   Command.Spec.(empty
                 +> Flag.db_file ()
                 +> Flag.in_all ()
+                +> Flag.show_pass ()
                 +> anon (sequence ("terms" %: string)))
-  (fun db_file in_all terms () -> run_search ~db_file ~terms ~in_all)
+  (fun db_file in_all show_pass terms () -> run_search ~db_file ~terms ~in_all ~show_pass)
 
 let edit_cmd = Command.basic
   ~summary:"Edit an entry"
