@@ -97,7 +97,7 @@ let run_add ~db_file =
     | Error `Bad_database ->
       printf "Database is bad, aborting\n"
 
-let run_search ~db_file ~term ~in_all =
+let run_search ~db_file ~terms ~in_all =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -108,20 +108,26 @@ let run_search ~db_file ~term ~in_all =
         ~substring:(String.lowercase substring)
         (String.lowercase s)
     in
+    let matches_all ~terms s =
+      List.fold_left
+        ~f:(fun acc substring -> is_sub ~substring s && acc)
+        ~init:true
+        terms
+    in
     let module R = Db.Row in
     let f =
-      match term with
-        | None -> Fn.const true
-        | Some term -> begin
+      match terms with
+        | [] -> Fn.const true
+        | terms -> begin
           function
             | (n, R.Password { R.location = l
                              ;   username = u
                              }) ->
-              (is_sub ~substring:term n ||
-                 is_sub ~substring:term l  ||
-                 is_sub ~substring:term u)
+              (matches_all ~terms n ||
+                 matches_all ~terms l  ||
+                 matches_all ~terms u)
             | (n, R.Note note_text) ->
-              (is_sub ~substring:term n || (in_all && is_sub ~substring:term note_text))
+              (matches_all ~terms n || (in_all && matches_all ~terms note_text))
         end
     in
     let rows = Db.search ~f db
@@ -307,8 +313,8 @@ let search_cmd = Command.basic
   Command.Spec.(empty
                 +> Flag.db_file ()
                 +> Flag.in_all ()
-                +> anon (maybe ("term" %: string)))
-  (fun db_file in_all term () -> run_search ~db_file ~term ~in_all)
+                +> anon (sequence ("terms" %: string)))
+  (fun db_file in_all terms () -> run_search ~db_file ~terms ~in_all)
 
 let edit_cmd = Command.basic
   ~summary:"Edit an entry"
