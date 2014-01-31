@@ -12,3 +12,5 @@
 
 # Out binary
 opass
+opass.native
+opass.byte
