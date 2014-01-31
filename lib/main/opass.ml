@@ -34,6 +34,14 @@ module Flag = struct
   let show_pass () =
     flag "-show" ~doc:" Display the password instead of leaving it blank"
       (no_arg)
+
+  let copy_pass () =
+    flag "-copy" ~doc:" Pipe the password into program"
+      (no_arg)
+
+  let copy_pass_prog () =
+    flag "-copy-prog" ~doc:" Use this program to pipe, defaults to $OPASS_COPY"
+      (optional string)
 end
 
 let read_cmd  = "gpg --decrypt"
@@ -66,6 +74,19 @@ let print_row show_pass = function
   end
   | (name, Db.Row.Note n) ->
     Printf.printf "Name: %s\nNote:\n%s\n" name n
+
+let copy_password password prog =
+  ignore (Shell.run_full ~input:password "/bin/sh" ["-c"; prog])
+
+let maybe_copy_password copy_pass copy_pass_prog = function
+  | [(_, Db.Row.Password { Db.Row.password })] -> begin
+    match (copy_pass, copy_pass_prog) with
+      | (false, _)        -> ()
+      | (true, None)      -> copy_password password (Sys.getenv_exn "OPASS_COPY")
+      | (true, Some prog) -> copy_password password prog
+  end
+  | _ ->
+    ()
 
 let run_add ~db_file =
   let rec read_db () =
@@ -106,7 +127,7 @@ let run_add ~db_file =
     | Error `Bad_database ->
       printf "Database is bad, aborting\n"
 
-let run_search ~db_file ~terms ~in_all ~show_pass =
+let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -141,6 +162,7 @@ let run_search ~db_file ~terms ~in_all ~show_pass =
     in
     let rows = Db.search ~f db
     in
+    maybe_copy_password copy_pass copy_pass_prog rows;
     print_rows show_pass rows
   and print_rows show_pass = function
     | [] ->
@@ -323,8 +345,11 @@ let search_cmd = Command.basic
                 +> Flag.db_file ()
                 +> Flag.in_all ()
                 +> Flag.show_pass ()
+                +> Flag.copy_pass ()
+                +> Flag.copy_pass_prog ()
                 +> anon (sequence ("terms" %: string)))
-  (fun db_file in_all show_pass terms () -> run_search ~db_file ~terms ~in_all ~show_pass)
+  (fun db_file in_all show_pass copy_pass copy_pass_prog terms () ->
+    run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog)
 
 let edit_cmd = Command.basic
   ~summary:"Edit an entry"
