@@ -6,13 +6,12 @@ build: [
 ]
 
 remove: [
-  ["rm" "-v" "${prefix}%/opass"]
+  ["rm" "-v" "%{prefix}%/opass"]
 ]
 
 depends: [
   "ocamlfind"
   "core"
   "core_extended"
-  "str"
   "csv"
 ]
