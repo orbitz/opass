@@ -15,7 +15,7 @@ NATIVE_TARGETS=opass.native
 all: native-code byte-code install
 
 install: all
-	cp -vf opass.native $(PREFIX)/opass
+	cp -vf opass.native $(PREFIX)/bin/opass
 
 test:
 
