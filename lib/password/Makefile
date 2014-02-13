@@ -10,9 +10,11 @@ NON_LIB_MODULES=
 BYTE_TARGETS=password.cma
 NATIVE_TARGETS=password.cmxa
 
-.PHONY: all test
+.PHONY: all test install
 
 all: native-code byte-code
+
+install:
 
 test:
 

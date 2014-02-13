@@ -12,7 +12,10 @@ NATIVE_TARGETS=opass.native
 
 .PHONY: all test
 
-all: native-code byte-code
+all: native-code byte-code install
+
+install: all
+	cp -vf opass.native $(PREFIX)/opass
 
 test:
 

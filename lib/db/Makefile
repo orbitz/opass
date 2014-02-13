@@ -10,9 +10,11 @@ NON_LIB_MODULES=
 BYTE_TARGETS=db.cma
 NATIVE_TARGETS=db.cmxa
 
-.PHONY: all test
+.PHONY: all test install
 
 all: native-code byte-code
+
+install:
 
 test:
 

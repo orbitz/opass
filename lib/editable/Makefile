@@ -10,9 +10,11 @@ NON_LIB_MODULES=
 BYTE_TARGETS=editable.cma
 NATIVE_TARGETS=editable.cmxa
 
-.PHONY: all test
+.PHONY: all test install
 
 all: native-code byte-code
+
+install:
 
 test:
 
