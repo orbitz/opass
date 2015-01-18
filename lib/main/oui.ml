@@ -1,7 +1,5 @@
 open Core.Std
 
-module Shell = Core_extended.Std.Shell
-
 let k k kv =
   List.Assoc.find_exn kv ~equal:(=) k
 

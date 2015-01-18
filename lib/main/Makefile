@@ -1,10 +1,10 @@
 CAMLP4=
 
-OCAMLDEP_OPTS=-package core,core_extended,str,db,password,editable,csv
-OCAMLC_OPTS=$(OCAMLDEP_OPTS) -cclib -lre2_stubs -cclib -lstdc++
+OCAMLDEP_OPTS=-package core,str,db,password,editable,csv
+OCAMLC_OPTS=$(OCAMLDEP_OPTS)
 OCAMLOPT_OPTS=$(OCAMLDEP_OPTS)
 
-LIB_MODULES=forms.ml db_io.ml oui.ml import_1password.ml import_txt.ml import_csv.ml
+LIB_MODULES=forms.ml db_io.ml oui.ml import_1password.ml import_txt.ml import_csv.ml opass_shell.ml
 NON_LIB_MODULES=opass.ml
 
 BYTE_TARGETS=opass.byte

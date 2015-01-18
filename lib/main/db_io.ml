@@ -1,8 +1,6 @@
 open Core.Std
 
-module Shell = Core_extended.Std.Shell
-
-let sh ~input cmd = Shell.run_full ~input "/bin/sh" ["-c"; cmd ^ " 2>/dev/null"]
+let sh ~input cmd = Opass_shell.sh ~input (cmd ^ " 2>/dev/null")
 
 let read_wrap ~cmd fname =
   let open Result.Monad_infix in
