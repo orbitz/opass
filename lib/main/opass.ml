@@ -1,7 +1,9 @@
 open Core.Std
 open Result.Monad_infix
 
-module Shell = Core_extended.Std.Shell
+let cp src dst =
+  if Sys.command (Printf.sprintf "cp -v %s %s" src dst) <> 0 then
+    failwith "Error in copy"
 
 module Flag = struct
 
@@ -52,14 +54,14 @@ let safe_write db db_file =
   let db_file_bak = db_file ^ ".bak" in
 
   if Sys.file_exists db_file = `Yes then
-    Shell.cp db_file db_file_bak;
+    cp db_file db_file_bak;
 
   match Db_io.write db ~cmd:write_cmd db_file with
     | Ok () ->
       Ok ()
     | Error _ -> begin
       if Sys.file_exists db_file_bak = `Yes then
-        Shell.cp db_file_bak db_file;
+        cp db_file_bak db_file;
       Error `Database_write_fail
     end
 
@@ -76,7 +78,7 @@ let print_row show_pass = function
     Printf.printf "Name: %s\nNote:\n%s\n" name n
 
 let copy_password password prog =
-  ignore (Shell.run_full ~input:password "/bin/sh" ["-c"; prog])
+  ignore (Opass_shell.sh ~input:password prog)
 
 let maybe_copy_password copy_pass copy_pass_prog = function
   | [(_, Db.Row.Password { Db.Row.password })] -> begin
@@ -127,6 +129,11 @@ let run_add ~db_file =
     | Error `Bad_database ->
       printf "Database is bad, aborting\n"
 
+let is_substring ~substring haystack =
+  let quoted = Str.quote substring in
+  let re = Str.regexp (".*" ^ quoted ^ ".*") in
+  Str.string_match re haystack 0
+
 let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
@@ -134,7 +141,7 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
     search_db db
   and search_db db =
     let is_sub ~substring s =
-      Core_extended.Std.String.is_substring
+      is_substring
         ~substring:(String.lowercase substring)
         (String.lowercase s)
     in
