@@ -5,6 +5,9 @@ export OCAMLPATH:=$(shell pwd)/lib:$(OCAMLPATH)
 all:
 	$(MAKE) -C lib
 
+install: all
+	$(MAKE) -C lib/main install
+
 test: all
 	$(MAKE) -C lib test
 	$(MAKE) -C tests test
