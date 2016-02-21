@@ -1,16 +1,18 @@
 *~
-*.o
+*.cma
 *.a
+*.cmxa
 *.cmo
 *.cmi
 *.cmx
-*.cmxa
-*.cma
-
-# Deps
+*.o
+*.native
+*.byte
+*.native_test
+*.byte_test
 .d
-
-# Out binary
-opass
-opass.native
-opass.byte
+META
+pds.mk
+src/*/Makefile
+tests/*/Makefile
+Ocamlrules.mk.in

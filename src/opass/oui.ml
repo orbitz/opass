@@ -14,7 +14,7 @@ let generate_password p l c =
       | _          -> failwith "This should never happen"
 
 let run_password pf =
-  match Editable.Engine.run [pf] with
+  match Editable.run [pf] with
     | Result.Ok [inputs] ->
       let module R = Db.Row in
       let password =
@@ -36,7 +36,7 @@ let run_password pf =
       Result.Error `Bad_editor
 
 let run_note nf =
-  match Editable.Engine.run [nf] with
+  match Editable.run [nf] with
     | Result.Ok [inputs] ->
       let module R = Db.Row in
       Result.Ok (k "name" inputs, R.Note (k "note" inputs))
