@@ -23,8 +23,8 @@ let write_forms fname forms =
       ~sep:"\n"
       (List.map
 	 ~f:(fun e ->
-	   Entry.prompt e ^ ": " ^ Entry.default e)
-	 (Form.to_list form))
+	   Editable_entry.prompt e ^ ": " ^ Editable_entry.default e)
+	 (Editable_form.to_list form))
   in
   let forms_str =
     String.concat
@@ -43,7 +43,7 @@ let rec read_next_line form (ch, cl) acc = function
   | l::ls -> begin
     match parse_line l with
       | `New (p, s) -> begin
-	match Form.name_of_prompt p form with
+	match Editable_form.name_of_prompt p form with
 	  | Some h ->
 	    read_next_line form (h, s) ((ch, cl)::acc) ls
 	  | None ->
@@ -61,7 +61,7 @@ let rec read_first_line form = function
   | l::ls -> begin
     match parse_line l with
       | `New (p, s) -> begin
-	match Form.name_of_prompt p form with
+	match Editable_form.name_of_prompt p form with
 	  | Some h ->
 	    read_next_line form (h, s) [] ls
 	  | None ->
@@ -101,7 +101,7 @@ let validate_forms inputs forms =
     | [] ->
       Result.Ok (List.rev acc)
     | (input, form)::inf -> begin
-      match Form.validate input form with
+      match Editable_form.validate input form with
 	| [] ->
 	  validate_form (input::acc) inf
 	| errors ->

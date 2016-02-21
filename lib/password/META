@@ -1,6 +1,0 @@
-name="password"
-version="1.0.0"
-description="Some functions to generate passwords"
-requires="core"
-archive(byte)="password.cma"
-archive(native)="password.cmxa"
