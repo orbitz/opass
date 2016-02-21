@@ -1,24 +1,23 @@
 open Core.Std
 
 module Row = struct
-  type name     = string with sexp
+  type name     = string [@@deriving sexp]
   type password = { location : string
                   ; username : string
                   ; password : string
-                  }
-  with sexp
+                  } [@@deriving sexp]
 
-  type note     = string with sexp
+  type note     = string [@@deriving sexp]
 
   type elt =
     | Password of password
     | Note     of note
-  with sexp
+  [@@deriving sexp]
 
-  type t = (name * elt) with sexp
+  type t = (name * elt) [@@deriving sexp]
 end
 
-type t = Row.t list with sexp
+type t = Row.t list [@@deriving sexp]
 
 let make () =
   []
