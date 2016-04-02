@@ -1,3 +1,7 @@
-$(shell pds)
+all:
+	pds
+	$(MAKE) -f pds.mk all
 
-include pds.mk
+%:
+	pds
+	$(MAKE) -f pds.mk $*
