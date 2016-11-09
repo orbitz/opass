@@ -169,8 +169,10 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
     in
     let rows = Db.search ~f db
     in
+    let ret = print_rows show_pass rows in
+    flush stdout;
     maybe_copy_password copy_pass copy_pass_prog rows;
-    print_rows show_pass rows
+    ret
   and print_rows show_pass = function
     | [] ->
       Error `Not_found
