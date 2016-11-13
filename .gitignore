@@ -1,17 +1,4 @@
 *~
-*.cma
-*.a
-*.cmxa
-*.cmo
-*.cmi
-*.cmx
-*.o
-*.native
-*.byte
-*.native_test
-*.byte_test
-.d
-META
 pds.mk
 Ocamlrules.mk.in
 build/
