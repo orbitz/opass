@@ -2,3 +2,5 @@
 pds.mk
 Ocamlrules.mk.in
 build/
+.merlin
+

@@ -1,7 +1,5 @@
-open Core.Std
-
 let k k kv =
-  List.Assoc.find_exn kv ~equal:(=) k
+  CCList.Assoc.get_exn ~eq:(=) k kv
 
 let generate_password p l c =
   if p <> "" then
@@ -15,41 +13,41 @@ let generate_password p l c =
 
 let run_password pf =
   match Editable.run [pf] with
-    | Result.Ok [inputs] ->
+    | Ok [inputs] ->
       let module R = Db.Row in
       let password =
 	generate_password
 	  (k "password" inputs)
-	  (Int.of_string (k "length" inputs))
+	  (int_of_string (k "length" inputs))
 	  (k "charset" inputs)
       in
-      Result.Ok
+      Ok
 	(k "name" inputs, R.Password { R.location = k "location" inputs
 				     ;   username = k "username" inputs
 				     ;   password = password
 				     })
-    | Result.Ok _ ->
+    | Ok _ ->
       failwith "Bad input"
-    | Result.Error `Cancelled ->
-      Result.Error `Cancelled
-    | Result.Error `Bad_editor ->
-      Result.Error `Bad_editor
+    | Error `Cancelled ->
+      Error `Cancelled
+    | Error `Bad_editor ->
+      Error `Bad_editor
 
 let run_note nf =
   match Editable.run [nf] with
-    | Result.Ok [inputs] ->
+    | Ok [inputs] ->
       let module R = Db.Row in
-      Result.Ok (k "name" inputs, R.Note (k "note" inputs))
-    | Result.Ok _ ->
+      Ok (k "name" inputs, R.Note (k "note" inputs))
+    | Ok _ ->
       failwith "Bad input"
-    | Result.Error `Cancelled ->
-      Result.Error `Cancelled
-    | Result.Error `Bad_editor ->
-      Result.Error `Bad_editor
+    | Error `Cancelled ->
+      Error `Cancelled
+    | Error `Bad_editor ->
+      Error `Bad_editor
 
 let rec read_row () =
   Printf.printf "Password/note (P/n): %!";
-  match In_channel.input_line stdin with
+  match CCIO.read_line stdin with
     | Some l -> begin
       match l with
 	| "" | "P" | "p" ->

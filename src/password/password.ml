@@ -1,21 +1,19 @@
-open Core.Std
-
 type t = string
 
 let lowercase = "abcdefghijklmnopqrstuvwxyz"
-let alpha     = lowercase ^ String.uppercase lowercase
+let alpha     = lowercase ^ CCString.uppercase_ascii lowercase
 let num       = "0123456789"
 let alphanum  = alpha ^ num
 let symbols   = "!@#$%^&*();:<>,.?"
 let all       = alphanum ^ symbols
 
 let pick_n src len =
-  let s   = String.create len in
-  let s_l = String.length src in
+  let s   = Bytes.create len in
+  let s_l = Bytes.length src in
   for i = 0 to len - 1 do
-    String.set s i (String.get src (Random.int s_l))
+    Bytes.set s i (String.get src (Random.int s_l))
   done;
-  s
+  Bytes.to_string s
 
 let mk_alpha = pick_n alpha
 

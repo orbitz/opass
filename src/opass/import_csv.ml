@@ -26,8 +26,8 @@ let import filename =
            } in
            let res = Db.add (name, Db.Row.Password pwd) db in
            match res with
-           | Core.Std.Ok x -> x
-           | Core.Std.Error _ -> begin
+           | Ok x -> x
+           | Error _ -> begin
                Printf.eprintf "Error: duplicate entry: \"%s\", going on...\n%!" name;
                db
              end)

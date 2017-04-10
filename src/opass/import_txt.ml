@@ -1,23 +1,17 @@
-open Core.Std
-
-let (|>) x f = f x;;
-
 let finally handler f x =
   let r = (try f x with e -> handler(); raise e) in
   handler ();
   r
-;;
 
 let with_dispose ~dispose f x =
   finally (fun () -> dispose x) f x
-;;
 
 let rec fold_on_dir_tree f acc start_dir =
   let rec loop_the_dir handle acc =
     let entry =
       try Some (Unix.readdir handle)
-      with End_of_file -> None in
-
+      with End_of_file -> None
+    in
     match entry with
     | None -> acc   (* No more entry *)
     | Some entry -> begin (* another entry to process *)
@@ -43,26 +37,25 @@ let rec fold_on_dir_tree f acc start_dir =
 
   let dispose h = Unix.closedir h in
   with_dispose ~dispose (fun h -> loop_the_dir h acc) (Unix.opendir start_dir)
-;;
 
 let note_of_file kind db fname =
   let module F = Filename in
-  let module S = Core_kernel.Core_string in
-  let name = F.basename fname |>
-             F.chop_extension |>
-             S.tr ~target:'_' ~replacement:' ' in
-  let name = List.map (S.split name ~on:' ') S.capitalize |>
-             S.concat ~sep:" " in
-  let content = open_in_bin fname |> In_channel.input_all |> S.strip in
+  let name =
+    F.basename fname
+    |> F.chop_extension
+    |> CCString.replace ~which:`All ~sub:"_" ~by:" " in
+  let name =
+    (CCString.Split.list_cpy ~by:" " name)
+    |> List.map CCString.capitalize_ascii
+    |> String.concat " "
+  in
+  let content = CCIO.with_in fname (fun ic -> String.trim (CCIO.read_all ic)) in
   let res = Db.add (name, Db.Row.Note content) db in
   match res with
   | Ok x -> x
-  | Error _ -> begin
-      Printf.eprintf "Error: duplicate entry: \"%s\", going on...\n%!" name;
-      db
-    end
-;;
+  | Error _ ->
+    Printf.eprintf "Error: duplicate entry: \"%s\", going on...\n%!" name;
+    db
 
 let import dirname =
   Some (fold_on_dir_tree note_of_file (Db.make ()) dirname)
-;;

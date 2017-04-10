@@ -1,4 +1,6 @@
-open Core.Std
+open Sexplib
+open Sexp
+open Conv
 
 module Row = struct
   type name     = string [@@deriving sexp]
@@ -23,39 +25,41 @@ let make () =
   []
 
 let of_string s =
-  t_of_sexp (Sexp.of_string s)
+  t_of_sexp (Sexplib.Sexp.of_string s)
 
 let to_string t =
-  Sexp.to_string_hum (sexp_of_t t)
+  Sexplib.Sexp.to_string_hum (sexp_of_t t)
 
 let search ~f t =
-  List.filter t ~f
+  CCListLabels.filter t ~f
 
 let add ((name, _) as row) t =
-  let f = Fn.compose ((=) name) fst in
+  let f = CCFun.compose fst ((=) name) in
   (* Find dups *)
   match search ~f t with
     | [] ->
-      Result.Ok (row::t)
+      Ok (row::t)
     | _::_ ->
-      Result.Error `Duplicate
+      Error `Duplicate
 
 let delete name t =
-  let f = Fn.compose ((<>) name) fst in
+  let f = CCFun.compose fst ((<>) name) in
   search ~f t
 
 let of_rows rows =
-  let open Result.Monad_infix in
+  let open CCResult.Infix in
   let rec f t = function
-    | [] -> Result.Ok t
+    | [] -> Ok t
     | r::rs ->
-      add r t >>= (Fn.flip f rs)
+      add r t
+      >>= (CCFun.flip f rs)
   in
   f (make ()) rows
 
 let rec merge t = function
   | [] ->
-    Result.Ok t
+    Ok t
   | r::rs ->
-    let open Result.Monad_infix in
-    add r t >>= (Fn.flip merge rs)
+    let open CCResult.Infix in
+    add r t
+    >>= (CCFun.flip merge rs)

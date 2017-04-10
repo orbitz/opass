@@ -1,9 +1,7 @@
-open Core.Std
-
-let key_find k kv = List.Assoc.find kv ~equal:(=) k
+let key_find k kv = CCList.Assoc.get ~eq:(=) k kv
 
 let add_password kv db =
-  let open Option.Monad_infix in
+  let open CCOpt.Infix in
   key_find "title" kv        >>= fun name ->
   key_find "username" kv     >>= fun username ->
   key_find "password" kv     >>= fun password ->
@@ -15,41 +13,48 @@ let add_password kv db =
 			      })
   in
   match Db.add row db with
-    | Result.Ok db   -> Some db
-    | Result.Error _ -> None
+    | Ok db   -> Some db
+    | Error _ -> None
 
 let add_note kv db =
-  let open Option.Monad_infix in
+  let open CCOpt.Infix in
   key_find "title" kv >>= fun name ->
   key_find "notes" kv >>= fun note ->
   let module R = Db.Row in
   let r = Str.regexp "\\\\n" in
   let row = (name, R.Note (Str.global_replace r "\n" note)) in
   match Db.add row db with
-    | Result.Ok db   -> Some db
-    | Result.Error _ -> None
+    | Ok db   -> Some db
+    | Error _ -> None
 
 let rec read_next_line db headers = function
   | [] -> Some db
   | l::ls -> begin
-    let open Option.Monad_infix in
-    List.zip headers (String.split ~on:'\t' l) >>= fun kv ->
+    let open CCOpt.Infix in
+    let kv = List.combine headers (CCString.Split.list_cpy ~by:"\t" l) in
     match key_find "notes" kv with
-      | Some "" -> add_password kv db >>= fun db -> read_next_line db headers ls
-      | Some _  -> add_note kv db     >>= fun db -> read_next_line db headers ls
-      | None    -> None
+      | Some "" ->
+        add_password kv db
+        >>= fun db ->
+        read_next_line db headers ls
+      | Some _ ->
+        add_note kv db
+        >>= fun db ->
+        read_next_line db headers ls
+      | None ->
+        None
   end
 
 let read_first_line = function
   | [] ->
     None
   | l::ls ->
-    let headers = String.split ~on:'\t' l in
+    let headers = CCString.Split.list_cpy ~by:"\t" l in
     read_next_line (Db.make ()) headers ls
 
 let import fname =
-  In_channel.with_file
+  CCIO.with_in
     fname
-    ~f:(fun fin ->
-      let lines = In_channel.input_lines fin in
-      read_first_line lines)
+    (fun ic ->
+       let lines = CCIO.read_lines_l ic in
+       read_first_line lines)
