@@ -21,8 +21,7 @@ let add_note kv db =
   key_find "title" kv >>= fun name ->
   key_find "notes" kv >>= fun note ->
   let module R = Db.Row in
-  let r = Str.regexp "\\\\n" in
-  let row = (name, R.Note (Str.global_replace r "\n" note)) in
+  let row = (name, R.Note (CCString.replace ~which:`All ~sub:"\\n" ~by:"\n" note)) in
   match Db.add row db with
     | Ok db   -> Some db
     | Error _ -> None

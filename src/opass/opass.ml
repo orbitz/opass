@@ -88,9 +88,7 @@ let run_add db_file =
       Printf.printf "Database is bad, aborting\n"
 
 let is_substring ~substring haystack =
-  let quoted = Str.quote substring in
-  let re = Str.regexp (".*" ^ quoted ^ ".*") in
-  Str.string_match re haystack 0
+  CCString.find ~sub:substring haystack <> -1
 
 let run_search db_file terms in_all show_pass copy_pass copy_pass_prog =
   let rec read_db () =
