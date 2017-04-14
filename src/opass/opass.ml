@@ -1,50 +1,8 @@
-open Core.Std
-open Result.Monad_infix
+open CCResult.Infix
 
 let cp src dst =
   if Sys.command (Printf.sprintf "cp -v %s %s" src dst) <> 0 then
     failwith "Error in copy"
-
-module Flag = struct
-
-  open Command.Spec
-
-  let db_file () =
-    flag "-db" ~doc:" Database file, set to opass.db by default"
-      (optional_with_default "opass.db" string)
-
-  let in_all () =
-    flag ~aliases:["--in-all"] "-in-all" ~doc:" Search everywhere, even in the text of notes"
-      (no_arg)
-
-  let pass_length () =
-    flag "-length" ~doc:" Length of password to generate"
-      (optional_with_default 24 int)
-
-  let charset () =
-    flag "-charset" ~doc:" Charset to use to generate (any, alpha, alphanum)"
-      (optional_with_default "any" string)
-
-  let src_type () =
-    flag "-type" ~doc:" Source type (1password, txt or csv)"
-      (required string)
-
-  let src_file () =
-    flag "-file" ~doc:" Source file (for 1password and csv) or directory (for txt)"
-      (required string)
-
-  let show_pass () =
-    flag "-show" ~doc:" Display the password instead of leaving it blank"
-      (no_arg)
-
-  let copy_pass () =
-    flag "-copy" ~doc:" Pipe the password into program"
-      (no_arg)
-
-  let copy_pass_prog () =
-    flag "-copy-prog" ~doc:" Use this program to pipe, defaults to $OPASS_COPY"
-      (optional string)
-end
 
 let read_cmd  = "gpg --decrypt"
 let write_cmd = "gpg -a --symmetric"
@@ -53,14 +11,14 @@ let write_cmd = "gpg -a --symmetric"
 let safe_write db db_file =
   let db_file_bak = db_file ^ ".bak" in
 
-  if Sys.file_exists db_file = `Yes then
+  if Sys.file_exists db_file then
     cp db_file db_file_bak;
 
   match Db_io.write db ~cmd:write_cmd db_file with
     | Ok () ->
       Ok ()
     | Error _ -> begin
-      if Sys.file_exists db_file_bak = `Yes then
+      if Sys.file_exists db_file_bak then
         cp db_file_bak db_file;
       Error `Database_write_fail
     end
@@ -84,13 +42,13 @@ let maybe_copy_password copy_pass copy_pass_prog = function
   | [(_, Db.Row.Password { Db.Row.password })] -> begin
     match (copy_pass, copy_pass_prog) with
       | (false, _)        -> ()
-      | (true, None)      -> copy_password password (Sys.getenv_exn "OPASS_COPY")
       | (true, Some prog) -> copy_password password prog
+      | (true, None)      -> assert false
   end
   | _ ->
     ()
 
-let run_add ~db_file =
+let run_add db_file =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -102,7 +60,7 @@ let run_add ~db_file =
     confirm_row db row
   and confirm_row db row =
     Printf.printf "Add, retry, cancel? (A/r/c): %!";
-    match In_channel.input_line stdin with
+    match CCIO.read_line stdin with
     | Some l -> confirm_action db row l
     | None   -> Error `Cancelled
   and confirm_action db row = function
@@ -117,24 +75,24 @@ let run_add ~db_file =
   in
   match read_db () with
     | Ok () ->
-      printf "Entry added\n"
+      Printf.printf "Entry added\n"
     | Error `Bad_editor ->
-      printf "No proper editor found, aborting\n"
+      Printf.printf "No proper editor found, aborting\n"
     | Error `Cancelled ->
       ()
     | Error `Duplicate ->
-      printf "Row already exists, aborting\n"
+      Printf.printf "Row already exists, aborting\n"
     | Error `Database_write_fail ->
-      printf "Writing database failed, aborting\n"
+      Printf.printf "Writing database failed, aborting\n"
     | Error `Bad_database ->
-      printf "Database is bad, aborting\n"
+      Printf.printf "Database is bad, aborting\n"
 
 let is_substring ~substring haystack =
   let quoted = Str.quote substring in
   let re = Str.regexp (".*" ^ quoted ^ ".*") in
   Str.string_match re haystack 0
 
-let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
+let run_search db_file terms in_all show_pass copy_pass copy_pass_prog =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -142,11 +100,11 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
   and search_db db =
     let is_sub ~substring s =
       is_substring
-        ~substring:(String.lowercase substring)
-        (String.lowercase s)
+        ~substring:(CCString.lowercase_ascii substring)
+        (CCString.lowercase_ascii s)
     in
     let matches_all ~terms s =
-      List.fold_left
+      ListLabels.fold_left
         ~f:(fun acc substring -> is_sub ~substring s && acc)
         ~init:true
         terms
@@ -154,9 +112,9 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
     let module R = Db.Row in
     let f =
       match terms with
-        | [] -> Fn.const true
-        | terms -> begin
-          function
+        | [] -> CCFun.const true
+        | terms ->
+          begin function
             | (n, R.Password { R.location = l
                              ;   username = u
                              }) ->
@@ -177,11 +135,11 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
     | [] ->
       Error `Not_found
     | rows -> begin
-      List.iter
+      ListLabels.iter
         ~f:(fun r ->
-          printf "=============================================\n";
-          print_row show_pass r;
-          printf "---------------------------------------------\n\n")
+            Printf.printf "=============================================\n";
+            print_row show_pass r;
+            Printf.printf "---------------------------------------------\n\n")
         rows;
       Ok ()
     end
@@ -189,11 +147,11 @@ let run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog =
   match read_db () with
     | Ok () -> ()
     | Error `Not_found ->
-      printf "No rows found\n"
+      Printf.printf "No rows found\n"
     | Error `Bad_database ->
-      printf "Bad database, aborting\n"
+      Printf.printf "Bad database, aborting\n"
 
-let run_edit ~db_file ~entry =
+let run_edit db_file entry =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
@@ -213,8 +171,8 @@ let run_edit ~db_file ~entry =
     print_row true row;
     confirm_edit db row
   and confirm_edit db rows =
-    printf "Save row? (Y/n): %!";
-    match In_channel.input_line stdin with
+    Printf.printf "Save row? (Y/n): %!";
+    match CCIO.read_line stdin with
     | Some l -> check_input db rows l
     | None   -> Error `Cancelled
   and check_input db row = function
@@ -229,20 +187,20 @@ let run_edit ~db_file ~entry =
   match read_db () with
   | Ok () -> ()
   | Error `Not_found ->
-    printf "No rows found\n"
+    Printf.printf "No rows found\n"
   | Error `Bad_database ->
-    printf "Bad database, aborting\n"
+    Printf.printf "Bad database, aborting\n"
   | Error `Database_write_fail ->
-    printf "Writng database failed, aborting\n"
+    Printf.printf "Writng database failed, aborting\n"
   | Error `Cancelled ->
-    printf "Edit cancelled\n"
+    Printf.printf "Edit cancelled\n"
   | Error `Duplicate ->
-    printf "Entry already exists, aborting\n"
+    Printf.printf "Entry already exists, aborting\n"
   | Error `Bad_editor ->
-    printf "No appropriate editor could be run\n"
+    Printf.printf "No appropriate editor could be run\n"
 
 
-let run_password ~pass_length:l ~charset:c =
+let run_password l c =
   let pass =
     match c with
       | "any"      -> Password.mk_all l
@@ -250,9 +208,9 @@ let run_password ~pass_length:l ~charset:c =
       | "alphanum" -> Password.mk_alphanum l
       | _          -> failwith "Unknown charset"
   in
-  Out_channel.output_string stdout (pass ^ "\n")
+  output_string stdout (pass ^ "\n")
 
-let run_merge ~db_file ~src_type ~src_file =
+let run_merge db_file src_type src_file =
   let rec src_to_db () =
     match src_type with
       | "1password" -> import_1password ()
@@ -285,21 +243,21 @@ let run_merge ~db_file ~src_type ~src_file =
   in
   match src_to_db () with
     | Ok () ->
-      printf "Successfully merged\n"
+      Printf.printf "Successfully merged\n"
     | Error `Unknown_src_type ->
-      printf "Source type '%s' is unknown, aborting\n" src_type
+      Printf.printf "Source type '%s' is unknown, aborting\n" src_type
     | Error `Bad_database ->
-      printf "Bad database, aborting\n"
+      Printf.printf "Bad database, aborting\n"
     | Error `Duplicate ->
-      printf "There were duplicates in merging, aborting\n"
+      Printf.printf "There were duplicates in merging, aborting\n"
     | Error `Bad_src_file ->
-      printf "Bad source file, exiting\n"
+      Printf.printf "Bad source file, exiting\n"
     | Error `Database_write_fail ->
-      printf "Failed to write database\n"
+      Printf.printf "Failed to write database\n"
 
-let run_del ~db_file ~terms =
+let run_del db_file terms =
   let is_member elt l =
-    List.findi ~f:(fun _ e -> elt = e) l <> None
+    CCList.find_pred (fun e -> elt = e) l <> None
   in
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
@@ -314,14 +272,14 @@ let run_del ~db_file ~terms =
     | [] ->
       Error `Not_found
     | rows -> begin
-      List.iter
-        ~f:(fun (n, _) -> printf "%s\n" n)
+      ListLabels.iter
+        ~f:(fun (n, _) -> Printf.printf "%s\n" n)
         rows;
       confirm_delete db rows
     end
   and confirm_delete db rows =
-    printf "Delete rows? (Y/n): %!";
-    match In_channel.input_line stdin with
+    Printf.printf "Delete rows? (Y/n): %!";
+    match CCIO.read_line stdin with
     | Some l -> check_input db rows l
     | None   -> Error `Cancelled
   and check_input db rows = function
@@ -335,75 +293,102 @@ let run_del ~db_file ~terms =
   match read_db () with
     | Ok () -> ()
     | Error `Not_found ->
-      printf "No rows found\n"
+      Printf.printf "No rows found\n"
     | Error `Bad_database ->
-      printf "Bad database, aborting\n"
+      Printf.printf "Bad database, aborting\n"
     | Error `Database_write_fail ->
-      printf "Writng database failed, aborting\n"
+      Printf.printf "Writng database failed, aborting\n"
     | Error `Cancelled ->
-      printf "Delete cancelled\n"
+      Printf.printf "Delete cancelled\n"
 
-let add_cmd = Command.basic
-  ~summary:"Add an entry"
-  Command.Spec.(empty +> Flag.db_file ())
-  (fun db_file () -> run_add ~db_file)
+module Cmdline = struct
+  module C = Cmdliner
 
-let search_cmd = Command.basic
-  ~summary:"Perform a search"
-  Command.Spec.(empty
-                +> Flag.db_file ()
-                +> Flag.in_all ()
-                +> Flag.show_pass ()
-                +> Flag.copy_pass ()
-                +> Flag.copy_pass_prog ()
-                +> anon (sequence ("terms" %: string)))
-  (fun db_file in_all show_pass copy_pass copy_pass_prog terms () ->
-    run_search ~db_file ~terms ~in_all ~show_pass ~copy_pass ~copy_pass_prog)
+  let db_file =
+    let doc = "Location of the database." in
+    C.Arg.(value & opt string "opass.db" & info ["db"] ~docv:"FILE" ~doc)
 
-let edit_cmd = Command.basic
-  ~summary:"Edit an entry"
-  Command.Spec.(empty
-                +> Flag.db_file ()
-                +> anon ("entry" %: string))
-  (fun db_file entry () -> run_edit ~db_file ~entry)
+  let in_all =
+    let doc = "Search everywhere, even in the text of notes." in
+    C.Arg.(value & flag & info ["in-all"] ~doc)
 
-let password_cmd = Command.basic
-  ~summary:"Generate a random password"
-  Command.Spec.(empty
-                +> Flag.pass_length ()
-                +> Flag.charset ())
-  (fun pass_length charset () -> run_password ~pass_length ~charset)
+  let pass_length =
+    let doc = "Length of the password to generate." in
+    C.Arg.(value & opt int 24 & info ["length"] ~docv:"INT" ~doc)
 
-let merge_cmd = Command.basic
-  ~summary:"Merge another database into this one"
-  Command.Spec.(empty
-                +> Flag.db_file ()
-                +> Flag.src_type ()
-                +> Flag.src_file ())
-  (fun db_file src_type src_file () ->
-    run_merge ~db_file ~src_type ~src_file)
+  let charset =
+    let doc = "Charset to use to generate (any, alpha, alphanum)." in
+    C.Arg.(value & opt string "any" & info ["charset"] ~docv:"CHARSET" ~doc)
 
-let del_cmd = Command.basic
-  ~summary:"Delete entries"
-  Command.Spec.(empty
-                +> Flag.db_file ()
-                +> anon ("term" %: string)
-                +> anon (sequence ("term" %: string)))
-  (fun db_file term_hd term_tl () ->
-    run_del ~db_file ~terms:(term_hd::term_tl))
+  let src_type =
+    let doc = "Source type (1password, txt, csv)." in
+    C.Arg.(required & opt (some string) None & info ["type"] ~docv:"SOURCE" ~doc)
+
+  let src_file =
+    let doc = "Source file (for 1password and csv) or directory (for txt)." in
+    C.Arg.(required & opt (some file) None & info ["file"] ~docv:"FILE" ~doc)
+
+  let show_pass =
+    let doc = "Display the password instead of leaving it blank." in
+    C.Arg.(value & flag & info ["show"] ~doc)
+
+  let copy_pass =
+    let doc = "Pipe the password into a program." in
+    C.Arg.(value & flag & info ["copy"] ~doc)
+
+  let copy_pass_prog =
+    let doc = "Use this program to pipe, defaults to $OPASS_COPY." in
+    let env = C.Arg.env_var "OPASS_COPY" ~doc in
+    C.Arg.(value & opt (some string) None & info ["copy-prog"] ~env ~docv:"STRING" ~doc)
+
+  let terms =
+    C.Arg.(value & pos_all string [] & info [] ~docv:"TERM")
+
+  let entry =
+    C.Arg.(required & pos 0 (some string) None & info [] ~docv:"ENTRY")
+
+  let add_cmd =
+    let doc = "Add a password or note." in
+    C.Term.((const run_add $ db_file),
+            info "add" ~doc)
+
+  let search_cmd =
+    let doc = "Search for a password or note." in
+    C.Term.((const run_search $ db_file $ terms $ in_all $ show_pass $ copy_pass $ copy_pass_prog),
+            info "search" ~doc)
+
+  let edit_cmd =
+    let doc = "Edit a password or note." in
+    C.Term.((const run_edit $ db_file $ entry),
+            info "edit" ~doc)
+
+  let password_cmd =
+    let doc = "Generate a random password." in
+    C.Term.((const run_password $ pass_length $ charset),
+            info "password" ~doc)
+
+  let merge_cmd =
+    let doc = "Merge a password source into this database." in
+    C.Term.((const run_merge $ db_file $ src_type $ src_file),
+            info "merge" ~doc)
+
+  let del_cmd =
+    let doc = "Delete a password or note." in
+    C.Term.((const run_del $ db_file $ terms),
+            info "del" ~doc)
+
+  let default_cmd =
+    let doc = "Manage encrypted passwords and notes." in
+    C.Term.(ret (const (`Help (`Pager, None))),
+            info "help" ~doc)
+
+  let cmds = [add_cmd; search_cmd; edit_cmd; password_cmd; merge_cmd; del_cmd]
+end
 
 let main () =
   Random.self_init ();
-  Exn.handle_uncaught ~exit:true (fun () ->
-    Command.run ~version:"0.1" ~build_info:"N/A"
-      (Command.group ~summary:"opass commands"
-         [ "add"       , add_cmd
-         ; "search"    , search_cmd
-         ; "edit"      , edit_cmd
-         ; "password"  , password_cmd
-         ; "merge"     , merge_cmd
-         ; "del"       , del_cmd
-         ]))
+  match Cmdliner.Term.eval_choice Cmdline.default_cmd Cmdline.cmds with
+    | `Error _ -> exit 1
+    | _ -> exit 0
 
 let () = main ()
-

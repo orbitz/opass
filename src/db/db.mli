@@ -1,5 +1,3 @@
-open Core.Std
-
 type t
 
 module Row : sig
@@ -23,11 +21,11 @@ val make      : unit -> t
 val of_string : string -> t
 val to_string : t -> string
 
-val of_rows   : Row.t list -> (t, [> `Duplicate]) Result.t
+val of_rows   : Row.t list -> (t, [> `Duplicate]) result
 
 val search : f:(Row.t -> bool) -> t -> Row.t list
 
-val add    : Row.t -> t -> (t, [> `Duplicate]) Result.t
+val add    : Row.t -> t -> (t, [> `Duplicate]) result
 val delete : Row.name -> t -> t
 
-val merge  : t -> t -> (t, [> `Duplicate]) Result.t
+val merge  : t -> t -> (t, [> `Duplicate]) result
