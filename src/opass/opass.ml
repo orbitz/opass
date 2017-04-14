@@ -88,20 +88,25 @@ let run_add db_file =
       Printf.printf "Database is bad, aborting\n"
 
 let is_substring ~substring haystack =
-  let quoted = Str.quote substring in
-  let re = Str.regexp (".*" ^ quoted ^ ".*") in
-  Str.string_match re haystack 0
+  CCString.find ~sub:substring haystack <> -1
 
-let run_search db_file terms in_all show_pass copy_pass copy_pass_prog =
+let run_search db_file terms in_all pattern show_pass copy_pass copy_pass_prog =
   let rec read_db () =
     Db_io.read ~cmd:read_cmd db_file
     >>= fun db ->
     search_db db
   and search_db db =
     let is_sub ~substring s =
-      is_substring
-        ~substring:(CCString.lowercase_ascii substring)
-        (CCString.lowercase_ascii s)
+      if pattern then
+        match Lua_pattern.of_string substring with
+          | Some p ->
+            Lua_pattern.mtch s p <> None
+          | None ->
+            failwith (Printf.sprintf "Invalid pattern: %s" substring)
+      else
+        is_substring
+          ~substring:(CCString.lowercase_ascii substring)
+          (CCString.lowercase_ascii s)
     in
     let matches_all ~terms s =
       ListLabels.fold_left
@@ -330,16 +335,20 @@ module Cmdline = struct
 
   let show_pass =
     let doc = "Display the password instead of leaving it blank." in
-    C.Arg.(value & flag & info ["show"] ~doc)
+    C.Arg.(value & flag & info ["s"; "show"] ~doc)
 
   let copy_pass =
     let doc = "Pipe the password into a program." in
-    C.Arg.(value & flag & info ["copy"] ~doc)
+    C.Arg.(value & flag & info ["c"; "copy"] ~doc)
 
   let copy_pass_prog =
-    let doc = "Use this program to pipe, defaults to $OPASS_COPY." in
+    let doc = "Use this program to pipe." in
     let env = C.Arg.env_var "OPASS_COPY" ~doc in
     C.Arg.(value & opt (some string) None & info ["copy-prog"] ~env ~docv:"STRING" ~doc)
+
+  let pattern =
+    let doc = "The search terms will be interpreted as a Lua pattern." in
+    C.Arg.(value & flag & info ["p"; "pattern"] ~doc)
 
   let terms =
     C.Arg.(value & pos_all string [] & info [] ~docv:"TERM")
@@ -354,7 +363,14 @@ module Cmdline = struct
 
   let search_cmd =
     let doc = "Search for a password or note." in
-    C.Term.((const run_search $ db_file $ terms $ in_all $ show_pass $ copy_pass $ copy_pass_prog),
+    C.Term.((const run_search $
+             db_file $
+             terms $
+             in_all $
+             pattern $
+             show_pass $
+             copy_pass $
+             copy_pass_prog),
             info "search" ~doc)
 
   let edit_cmd =
