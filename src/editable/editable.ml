@@ -31,7 +31,7 @@ let write_forms fname forms =
   in
   CCIO.with_out
     fname
-    (fun oc -> output_string oc forms_str)
+    (fun oc -> output_string oc forms_str; output_char oc '\n')
 
 let rec read_next_line form (ch, cl) acc = function
   | [] ->
