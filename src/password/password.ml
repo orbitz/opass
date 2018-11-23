@@ -9,7 +9,7 @@ let all       = alphanum ^ symbols
 
 let pick_n src len =
   let s   = Bytes.create len in
-  let s_l = Bytes.length src in
+  let s_l = String.length src in
   for i = 0 to len - 1 do
     Bytes.set s i (String.get src (Random.int s_l))
   done;
